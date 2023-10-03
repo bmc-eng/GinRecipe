@@ -21,12 +21,14 @@ type Recipe struct {
 
 var recipes []Recipe
 
+// Called when the file is first run
 func init() {
 	recipes = make([]Recipe, 0)
 	file, _ := os.ReadFile("recipes.json")
 	_ = json.Unmarshal([]byte(file), &recipes)
 }
 
+// Old Function to return a random uuid
 func IndexHandler(c *gin.Context) {
 	name := c.Params.ByName("name")
 	id := uuid.New()
@@ -36,6 +38,7 @@ func IndexHandler(c *gin.Context) {
 	})
 }
 
+// Function to create a new recipe
 func NewRecipeHandler(c *gin.Context) {
 	var recipe Recipe
 	if err := c.ShouldBindJSON(&recipe); err != nil {
@@ -50,8 +53,38 @@ func NewRecipeHandler(c *gin.Context) {
 
 }
 
+// Function to list all of the recipes
 func ListRecipesHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, recipes)
+}
+
+// Function to update a recipe given an id
+func UpdateRecipeHandler(c *gin.Context) {
+	// Get the id from the PUT request
+	id := c.Param("id")
+	var recipe Recipe
+	if err := c.ShouldBindJSON(&recipe); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error()})
+		return
+	}
+
+	// Find the recipe that matches the index
+	index := -1
+	for i := 0; i < len(recipes); i++ {
+		if recipes[i].ID == id {
+			index = i
+		}
+	}
+	if index == -1 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Recipe not found"})
+		return
+	}
+
+	// Return the index
+	recipes[index] = recipe
+	c.JSON(http.StatusOK, recipe)
 }
 
 func main() {
@@ -59,5 +92,6 @@ func main() {
 	//r.GET(":name", IndexHandler)
 	r.POST("/recipes", NewRecipeHandler)
 	r.GET("/recipes", ListRecipesHandler)
+	r.PUT("/recipes/:id", UpdateRecipeHandler)
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
