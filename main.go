@@ -88,11 +88,16 @@ func UpdateRecipeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, recipe)
 }
 
+func DeleteRecipeHandler(c *gin.Context) {
+	// TO IMPLEMENT !!
+}
+
 func main() {
 	r := gin.Default()
 	//r.GET(":name", IndexHandler)
 	r.POST("/recipes", NewRecipeHandler)
 	r.GET("/recipes", ListRecipesHandler)
 	r.PUT("/recipes/:id", UpdateRecipeHandler)
+	r.DELETE("/recipes/:id", DeleteRecipeHandler)
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
