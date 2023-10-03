@@ -24,6 +24,7 @@ var recipes []Recipe
 // Called when the file is first run
 func init() {
 	recipes = make([]Recipe, 0)
+	// Read the contents of a JSON file containing all the recipes
 	file, _ := os.ReadFile("recipes.json")
 	_ = json.Unmarshal([]byte(file), &recipes)
 }
