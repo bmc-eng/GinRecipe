@@ -51,7 +51,7 @@ func init() {
 func InitializeDatabase() {
 	// Read the contents of a JSON file containing all the recipes
 	recipes = make([]Recipe, 0)
-	file, _ := os.ReadFile("recipes.json")
+	file, _ := os.ReadFile("backup/recipes.json")
 	_ = json.Unmarshal([]byte(file), &recipes)
 
 	var listOfRecipes []interface{}
