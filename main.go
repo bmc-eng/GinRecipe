@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -89,7 +90,7 @@ func UpdateRecipeHandler(c *gin.Context) {
 }
 
 func DeleteRecipeHandler(c *gin.Context) {
-	// get the id from the parameter
+	// get the id from the parameter passed into the url
 	id := c.Param("id")
 
 	// find the id from the list of recipes
@@ -114,6 +115,28 @@ func DeleteRecipeHandler(c *gin.Context) {
 
 }
 
+// Handle search query from API
+// Example: http://localhost:8080/recipes/search?tag=vegetarian
+func SearchRecipeHandler(c *gin.Context) {
+	tag := c.Query("tag")
+	listOfRecipes := make([]Recipe, 0)
+	for i := 0; i < len(recipes); i++ {
+		found := false
+		for _, t := range recipes[i].Tags {
+			if strings.EqualFold(t, tag) {
+				found = true
+			}
+		}
+
+		if found {
+			listOfRecipes = append(listOfRecipes, recipes[i])
+		}
+	}
+
+	c.JSON(http.StatusOK, listOfRecipes)
+
+}
+
 func main() {
 	r := gin.Default()
 	//r.GET(":name", IndexHandler)
@@ -121,5 +144,6 @@ func main() {
 	r.GET("/recipes", ListRecipesHandler)
 	r.PUT("/recipes/:id", UpdateRecipeHandler)
 	r.DELETE("/recipes/:id", DeleteRecipeHandler)
+	r.GET("recipes/search", SearchRecipeHandler)
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
