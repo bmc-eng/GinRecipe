@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -114,17 +113,18 @@ func SingleRecipeHandler(c *gin.Context) {
 func SearchRecipeHandler(c *gin.Context) {
 	tag := c.Query("tag")
 	listOfRecipes := make([]Recipe, 0)
-	for i := 0; i < len(recipes); i++ {
-		found := false
-		for _, t := range recipes[i].Tags {
-			if strings.EqualFold(t, tag) {
-				found = true
-			}
-		}
 
-		if found {
-			listOfRecipes = append(listOfRecipes, recipes[i])
-		}
+	// Search through MongoDB for the tag
+	cur, err := collection.Find(ctx, bson.M{"tags": tag})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	defer cur.Close(ctx)
+	for cur.Next(ctx) {
+		var recipe Recipe
+		cur.Decode(&recipe)
+		listOfRecipes = append(listOfRecipes, recipe)
 	}
 
 	c.JSON(http.StatusOK, listOfRecipes)
