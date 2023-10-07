@@ -91,6 +91,19 @@ func ListRecipesHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, recipes)
 }
 
+func SingleRecipeHandler(c *gin.Context) {
+	id := c.Param("id")
+	cur, err := collection.Find(ctx, bson.M{"_id": id})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	defer cur.Close(ctx)
+	var recipe Recipe
+	cur.Decode(&recipe)
+	c.JSON(http.StatusOK, recipe)
+}
+
 // Handle search query from API Example: http://localhost:8080/recipes/search?tag=vegetarian
 func SearchRecipeHandler(c *gin.Context) {
 	tag := c.Query("tag")
@@ -201,6 +214,7 @@ func main() {
 	//r.GET(":name", IndexHandler)
 	r.POST("/recipes", NewRecipeHandler)
 	r.GET("/recipes", ListRecipesHandler)
+	r.GET("/recipes/:id", SingleRecipeHandler)
 	r.PUT("/recipes/:id", UpdateRecipeHandler)
 	r.DELETE("/recipes/:id", DeleteRecipeHandler)
 	r.GET("recipes/search", SearchRecipeHandler)
