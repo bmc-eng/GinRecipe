@@ -90,6 +90,7 @@ func ListRecipesHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, recipes)
 }
 
+// Function to return a recipe by id
 func SingleRecipeHandler(c *gin.Context) {
 	id := c.Param("id")
 
@@ -109,7 +110,7 @@ func SingleRecipeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, recipe)
 }
 
-// Handle search query from API Example: http://localhost:8080/recipes/search?tag=vegetarian
+// Handle search query from API Example: http://localhost:8080/recipes/search?tag=vegetarian - updated for MongoDB
 func SearchRecipeHandler(c *gin.Context) {
 	tag := c.Query("tag")
 	listOfRecipes := make([]Recipe, 0)
@@ -190,37 +191,32 @@ func UpdateRecipeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Recipe has been updated"})
 }
 
-// this is now broken under id
+// ##########################
+// #### DELETE Requests #####
+// ##########################
+
+// Updated for Mongo DB
 func DeleteRecipeHandler(c *gin.Context) {
 	// get the id from the parameter passed into the url
 	id := c.Param("id")
+	objectId, _ := primitive.ObjectIDFromHex(id)
 
-	// find the id from the list of recipes
-	index := -1
-	for i := 0; i < len(recipes); i++ {
-		objectId, _ := primitive.ObjectIDFromHex(id)
-		if recipes[i].ID == objectId {
-			index = i
-			break
-		}
-	}
+	cur, err := collection.DeleteOne(ctx, bson.M{"_id": objectId})
 
-	if index == -1 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Recipe not found"})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error()})
 		return
 	}
 
-	recipes = append(recipes[:index], recipes[index+1:]...)
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Recipe has been deleted",
-	})
+		"message": "Successfully removed record: " + id,
+		"count":   cur.DeletedCount})
 
 }
 
 func main() {
 	r := gin.Default()
-	//r.GET(":name", IndexHandler)
 	r.POST("/recipes", NewRecipeHandler)
 	r.GET("/recipes", ListRecipesHandler)
 	r.GET("/recipes/:id", SingleRecipeHandler)
