@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -9,6 +11,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 type Recipe struct {
@@ -20,14 +26,45 @@ type Recipe struct {
 	PublishedAt  time.Time `json:"publishedAt"`
 }
 
+// Global Variables
 var recipes []Recipe
+var ctx context.Context
+var err error
+var client *mongo.Client
+var collection *mongo.Collection
 
 // Called when the file is first run
 func init() {
-	recipes = make([]Recipe, 0)
+
+	// Connect to MongoDB
+	ctx = context.Background()
+	client, err = mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URI")))
+	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		log.Fatal(err)
+	}
+	collection = client.Database(os.Getenv("MONGO_DATABASE")).Collection("recipes")
+	log.Println("Connected to MongoDB")
+
+}
+
+// Function to initialise the database -
+// This code does not need to be run once the database is set up
+func InitializeDatabase() {
 	// Read the contents of a JSON file containing all the recipes
-	file, _ := os.ReadFile("recipes.json")
+	recipes = make([]Recipe, 0)
+	file, _ := os.ReadFile("backup/recipes.json")
 	_ = json.Unmarshal([]byte(file), &recipes)
+
+	var listOfRecipes []interface{}
+	for _, recipe := range recipes {
+		listOfRecipes = append(listOfRecipes, recipe)
+	}
+
+	insertManyResult, err := collection.InsertMany(ctx, listOfRecipes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 }
 
 // Old Function to return a random uuid
@@ -56,7 +93,20 @@ func NewRecipeHandler(c *gin.Context) {
 }
 
 // Function to list all of the recipes
+// Updated for MongoDB
 func ListRecipesHandler(c *gin.Context) {
+	cur, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer cur.Close(ctx)
+	recipes := make([]Recipe, 0)
+	for cur.Next(ctx) {
+		var recipe Recipe
+		cur.Decode(&recipe)
+		recipes = append(recipes, recipe)
+	}
 	c.JSON(http.StatusOK, recipes)
 }
 
