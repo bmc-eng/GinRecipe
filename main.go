@@ -47,7 +47,8 @@ func init() {
 
 }
 
-// Function to initialise the database - This code does not need to be run once the database is set up
+// Function to initialise the database -
+// This code does not need to be run once the database is set up
 func InitializeDatabase() {
 	// Read the contents of a JSON file containing all the recipes
 	recipes = make([]Recipe, 0)
@@ -92,6 +93,7 @@ func NewRecipeHandler(c *gin.Context) {
 }
 
 // Function to list all of the recipes
+// Updated for MongoDB
 func ListRecipesHandler(c *gin.Context) {
 	cur, err := collection.Find(ctx, bson.M{})
 	if err != nil {
