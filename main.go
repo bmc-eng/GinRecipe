@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -77,7 +78,8 @@ func IndexHandler(c *gin.Context) {
 	})
 }
 
-// Function to create a new recipe
+// Function to add a new recipe to Database
+// Add in MongoDB functionality
 func NewRecipeHandler(c *gin.Context) {
 	var recipe Recipe
 	if err := c.ShouldBindJSON(&recipe); err != nil {
@@ -87,8 +89,14 @@ func NewRecipeHandler(c *gin.Context) {
 	}
 	recipe.ID = uuid.New().String()
 	recipe.PublishedAt = time.Now()
-	recipes = append(recipes, recipe)
-	c.JSON(http.StatusOK, recipe)
+	_, err = collection.InsertOne(ctx, recipe)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while inserting a new recipe"})
+		return
+	}
+	message := gin.H{"message": "New Recipe added", "id": recipe.ID}
+	c.JSON(http.StatusOK, message)
 
 }
 
