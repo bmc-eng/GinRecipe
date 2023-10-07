@@ -34,7 +34,9 @@ var err error
 var client *mongo.Client
 var collection *mongo.Collection
 
-// Called when the file is first run
+// ##########################
+// ##### Initial setup ######
+// ##########################
 func init() {
 
 	// Connect to MongoDB
@@ -68,15 +70,51 @@ func InitializeDatabase() {
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 }
 
-// Old Function to return a random uuid
-func IndexHandler(c *gin.Context) {
-	name := c.Params.ByName("name")
-	id := uuid.New()
-	c.JSON(http.StatusOK, gin.H{
-		"user": "Hello " + name,
-		"id":   id.String(),
-	})
+// ##########################
+// ###### GET Requests ######
+// ##########################
+
+// Function to list all of the recipes - Updated for MongoDB
+func ListRecipesHandler(c *gin.Context) {
+	cur, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer cur.Close(ctx)
+	recipes := make([]Recipe, 0)
+	for cur.Next(ctx) {
+		var recipe Recipe
+		cur.Decode(&recipe)
+		recipes = append(recipes, recipe)
+	}
+	c.JSON(http.StatusOK, recipes)
 }
+
+// Handle search query from API Example: http://localhost:8080/recipes/search?tag=vegetarian
+func SearchRecipeHandler(c *gin.Context) {
+	tag := c.Query("tag")
+	listOfRecipes := make([]Recipe, 0)
+	for i := 0; i < len(recipes); i++ {
+		found := false
+		for _, t := range recipes[i].Tags {
+			if strings.EqualFold(t, tag) {
+				found = true
+			}
+		}
+
+		if found {
+			listOfRecipes = append(listOfRecipes, recipes[i])
+		}
+	}
+
+	c.JSON(http.StatusOK, listOfRecipes)
+
+}
+
+// ##########################
+// ##### POST Requests ######
+// ##########################
 
 // Function to add a new recipe to Database
 // Add in MongoDB functionality
@@ -100,23 +138,9 @@ func NewRecipeHandler(c *gin.Context) {
 
 }
 
-// Function to list all of the recipes
-// Updated for MongoDB
-func ListRecipesHandler(c *gin.Context) {
-	cur, err := collection.Find(ctx, bson.M{})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	defer cur.Close(ctx)
-	recipes := make([]Recipe, 0)
-	for cur.Next(ctx) {
-		var recipe Recipe
-		cur.Decode(&recipe)
-		recipes = append(recipes, recipe)
-	}
-	c.JSON(http.StatusOK, recipes)
-}
+// ##########################
+// ###### PUT Requests ######
+// ##########################
 
 // Function to update a recipe given an id
 func UpdateRecipeHandler(c *gin.Context) {
@@ -130,21 +154,20 @@ func UpdateRecipeHandler(c *gin.Context) {
 	}
 
 	// Find the recipe that matches the index
-	index := -1
-	for i := 0; i < len(recipes); i++ {
-		if recipes[i].ID == id {
-			index = i
-		}
-	}
-	if index == -1 {
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": id}, bson.D{{"$set", bson.D{
+		{"name", recipe.Name},
+		{"instructions", recipe.Instructions},
+		{"ingredients", recipe.Ingredients},
+		{"tags", recipe.Tags},
+	}}})
+	if err != nil {
+		fmt.Println(err)
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Recipe not found"})
+			"error": err.Error()})
 		return
 	}
 
-	// Return the index
-	recipes[index] = recipe
-	c.JSON(http.StatusOK, recipe)
+	c.JSON(http.StatusOK, gin.H{"message": "Recipe has been updated"})
 }
 
 func DeleteRecipeHandler(c *gin.Context) {
@@ -170,28 +193,6 @@ func DeleteRecipeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Recipe has been deleted",
 	})
-
-}
-
-// Handle search query from API
-// Example: http://localhost:8080/recipes/search?tag=vegetarian
-func SearchRecipeHandler(c *gin.Context) {
-	tag := c.Query("tag")
-	listOfRecipes := make([]Recipe, 0)
-	for i := 0; i < len(recipes); i++ {
-		found := false
-		for _, t := range recipes[i].Tags {
-			if strings.EqualFold(t, tag) {
-				found = true
-			}
-		}
-
-		if found {
-			listOfRecipes = append(listOfRecipes, recipes[i])
-		}
-	}
-
-	c.JSON(http.StatusOK, listOfRecipes)
 
 }
 
