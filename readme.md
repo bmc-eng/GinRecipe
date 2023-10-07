@@ -6,13 +6,14 @@ This is an implementation of Building Distributed Application in Gin with some e
 The API currently has the following features:
 
 - Get all Recipes using GET /recipes 
+- Get a single recipe using GET /recipes/id
 - Create a new recipe using POST /recipes {JSON recipe}
 - Update a recipe using PUT /recipe/id
 - Delete a recipe using DELETE recipes/id
 - Search for a recipe using GET recipes/tag
 
 ### MongoDB Set up
-Run mongodb in Docker with the following code:
+All functionality updated for MongoDB. The MongoDB database needs to be run and needs to have records imported. Run mongodb in Docker with the following code:
 
 ```docker run -d --name mongodb -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=password -p 27017:27017 mongo:4.4.3```
 
