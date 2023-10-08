@@ -28,4 +28,5 @@ Adding caching functionality to the API with redis. We use docker again to run t
 
 ```docker run -d -v redis:/usr/local/etc/redis --name redis -p 6379:6379 redis:6.0```
 
+Added redis to GET, POST, PUT and DELETE. For write updates, the cache will be deleted. Caching is not used on individual GET requests or tag searches. Tag searches should be implemented at a later stage and stored in correct cache.
 
