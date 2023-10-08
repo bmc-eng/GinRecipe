@@ -31,6 +31,9 @@ var collection *mongo.Collection
 // ##########################
 func init() {
 
+	// Add Auth key to the os.env
+	os.Setenv("X_API_KEY", EnvVariable("X_API_KEY"))
+
 	// Connect to MongoDB
 	ctx = context.Background()
 	client, err = mongo.Connect(ctx, options.Client().ApplyURI(EnvVariable("MONGO_URI")))
