@@ -116,7 +116,7 @@ func (handler *RecipesHandler) SearchRecipeHandler(c *gin.Context) {
 // ##########################
 
 // Function to add a new recipe to Database
-// Add in MongoDB functionality
+// Add in MongoDB functionality and updated to delete the data from redis
 func (handler *RecipesHandler) NewRecipeHandler(c *gin.Context) {
 	var recipe models.Recipe
 	if err := c.ShouldBindJSON(&recipe); err != nil {
@@ -132,6 +132,12 @@ func (handler *RecipesHandler) NewRecipeHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while inserting a new recipe"})
 		return
 	}
+
+	// Remove the redis instance
+	log.Println("Remove data from redis")
+	handler.redisClient.Del("recipes")
+
+	// Confirm success
 	message := gin.H{"message": "New Recipe added", "id": recipe.ID}
 	c.JSON(http.StatusOK, message)
 
@@ -167,6 +173,10 @@ func (handler *RecipesHandler) UpdateRecipeHandler(c *gin.Context) {
 		return
 	}
 
+	//Remove Redis
+	log.Println("Deleting the cache")
+	handler.redisClient.Del("recipes")
+
 	c.JSON(http.StatusOK, gin.H{"message": "Recipe has been updated"})
 }
 
@@ -187,6 +197,9 @@ func (handler *RecipesHandler) DeleteRecipeHandler(c *gin.Context) {
 			"error": err.Error()})
 		return
 	}
+
+	log.Println("Removing redis cache")
+	handler.redisClient.Del("recipes")
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Successfully removed record: " + id,
