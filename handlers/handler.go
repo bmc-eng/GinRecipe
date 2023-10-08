@@ -118,6 +118,7 @@ func (handler *RecipesHandler) SearchRecipeHandler(c *gin.Context) {
 // Function to add a new recipe to Database
 // Add in MongoDB functionality and updated to delete the data from redis
 func (handler *RecipesHandler) NewRecipeHandler(c *gin.Context) {
+
 	var recipe models.Recipe
 	if err := c.ShouldBindJSON(&recipe); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

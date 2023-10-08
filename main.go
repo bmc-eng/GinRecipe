@@ -31,6 +31,9 @@ var collection *mongo.Collection
 // ##########################
 func init() {
 
+	// Add Auth key to the os.env
+	os.Setenv("X_API_KEY", EnvVariable("X_API_KEY"))
+
 	// Connect to MongoDB
 	ctx = context.Background()
 	client, err = mongo.Connect(ctx, options.Client().ApplyURI(EnvVariable("MONGO_URI")))
@@ -78,6 +81,15 @@ func InitializeDatabase() {
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 }
 
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetHeader("X-API-KEY") != EnvVariable("X_API_KEY") {
+			c.AbortWithStatus(401)
+		}
+		c.Next()
+	}
+}
+
 func EnvVariable(key string) string {
 	err := godotenv.Load()
 
@@ -90,11 +102,20 @@ func EnvVariable(key string) string {
 
 func main() {
 	r := gin.Default()
-	r.POST("/recipes", recipesHandler.NewRecipeHandler)
+
+	// Add Authentication section
+	authorized := r.Group("/")
+	authorized.Use(AuthMiddleware())
+	{
+		authorized.POST("/recipes", recipesHandler.NewRecipeHandler)
+		authorized.PUT("/recipes/:id", recipesHandler.UpdateRecipeHandler)
+		authorized.DELETE("/recipes/:id", recipesHandler.DeleteRecipeHandler)
+	}
+
+	// Get functionality does not need authorisation
 	r.GET("/recipes", recipesHandler.ListRecipesHandler)
 	r.GET("/recipes/:id", recipesHandler.SingleRecipeHandler)
-	r.PUT("/recipes/:id", recipesHandler.UpdateRecipeHandler)
-	r.DELETE("/recipes/:id", recipesHandler.DeleteRecipeHandler)
 	r.GET("recipes/search", recipesHandler.SearchRecipeHandler)
+
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
