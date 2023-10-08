@@ -19,6 +19,7 @@ import (
 
 // Global Variables
 var recipesHandler *handlers.RecipesHandler
+var authHandler *handlers.AuthHandler
 
 // var recipes []Recipe
 var ctx context.Context
@@ -32,7 +33,7 @@ var collection *mongo.Collection
 func init() {
 
 	// Add Auth key to the os.env
-	os.Setenv("X_API_KEY", EnvVariable("X_API_KEY"))
+	os.Setenv("JWT_SECRET", EnvVariable("JWT_SECRET"))
 
 	// Connect to MongoDB
 	ctx = context.Background()
@@ -54,6 +55,7 @@ func init() {
 
 	// Set up the recipesHandler
 	recipesHandler = handlers.NewRecipesHandler(ctx, collection, redisClient)
+	authHandler = &handlers.AuthHandler{}
 
 }
 
@@ -81,15 +83,6 @@ func InitializeDatabase() {
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 }
 
-func AuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if c.GetHeader("X-API-KEY") != EnvVariable("X_API_KEY") {
-			c.AbortWithStatus(401)
-		}
-		c.Next()
-	}
-}
-
 func EnvVariable(key string) string {
 	err := godotenv.Load()
 
@@ -105,7 +98,7 @@ func main() {
 
 	// Add Authentication section
 	authorized := r.Group("/")
-	authorized.Use(AuthMiddleware())
+	authorized.Use(authHandler.AuthMiddleware())
 	{
 		authorized.POST("/recipes", recipesHandler.NewRecipeHandler)
 		authorized.PUT("/recipes/:id", recipesHandler.UpdateRecipeHandler)
@@ -115,7 +108,9 @@ func main() {
 	// Get functionality does not need authorisation
 	r.GET("/recipes", recipesHandler.ListRecipesHandler)
 	r.GET("/recipes/:id", recipesHandler.SingleRecipeHandler)
-	r.GET("recipes/search", recipesHandler.SearchRecipeHandler)
+	r.GET("/recipes/search", recipesHandler.SearchRecipeHandler)
+	// Allow the user to sign in outside requiring authentication
+	r.POST("/signin", authHandler.SignInHandler)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
