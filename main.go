@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -32,11 +33,11 @@ func init() {
 
 	// Connect to MongoDB
 	ctx = context.Background()
-	client, err = mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URI")))
+	client, err = mongo.Connect(ctx, options.Client().ApplyURI(EnvVariable("MONGO_URI")))
 	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
 		log.Fatal(err)
 	}
-	collection = client.Database(os.Getenv("MONGO_DATABASE")).Collection("recipes")
+	collection = client.Database(EnvVariable("MONGO_DATABASE")).Collection("recipes")
 	log.Println("Connected to MongoDB")
 
 	// Set up Redis Cache
@@ -52,6 +53,10 @@ func init() {
 	recipesHandler = handlers.NewRecipesHandler(ctx, collection, redisClient)
 
 }
+
+// ###########################
+// ##### HELPER FUNCTION #####
+// ###########################
 
 // Function to initialise the database -
 // This code does not need to be run once the database is set up
@@ -71,6 +76,16 @@ func InitializeDatabase() {
 		log.Fatal(err)
 	}
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
+}
+
+func EnvVariable(key string) string {
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	return os.Getenv(key)
 }
 
 func main() {
