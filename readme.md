@@ -19,9 +19,9 @@ All functionality updated for MongoDB. The MongoDB database needs to be run and 
 
 Confirm running with ```docker rs```
 
-To run with mongoDB initialised:
+MongoDB configuration added into .env file. No longer needs to be passed into the go run command. To start the project ensure that the MongoDB container and the Redis container are up and running. Ensure that the connectivity is set in the .env file and run the following:
 
-```MONGO_URI="mongodb://admin:password@localhost:27017/test?authSource=admin" MONGO_DATABASE=demo go run main.go```
+```go run *.go```
 
 ### Caching with Redis
 Adding caching functionality to the API with redis. We use docker again to run the redis container. Ensure that the following is running before starting the application. Set the redis policy so that has a maximum size of 512MB in the redis config file.
