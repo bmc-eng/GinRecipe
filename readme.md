@@ -23,6 +23,10 @@ To run with mongoDB initialised:
 
 ```MONGO_URI="mongodb://admin:password@localhost:27017/test?authSource=admin" MONGO_DATABASE=demo go run main.go```
 
+### Caching with Redis
+Adding caching functionality to the API with redis. We use docker again to run the redis container. Ensure that the following is running before starting the application. Set the redis policy so that has a maximum size of 512MB in the redis config file.
 
+```docker run -d -v redis:/usr/local/etc/redis --name redis -p 6379:6379 redis:6.0```
 
+Added redis to GET, POST, PUT and DELETE. For write updates, the cache will be deleted. Caching is not used on individual GET requests or tag searches. Tag searches should be implemented at a later stage and stored in correct cache.
 
