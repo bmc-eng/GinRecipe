@@ -12,6 +12,18 @@ The API currently has the following features:
 - Delete a recipe using DELETE recipes/id
 - Search for a recipe using GET recipes/tag
 
+### Authorisation with JWT
+You need an authorisation token in order to post, update or delete a record. To get a token, use the POST signin functionality:
+
+```
+{
+    "username": "admin",
+    "password": "password"
+}
+```
+
+This will return a token that needs to be added to the Header "Authorization" key.
+
 ### MongoDB Set up
 All functionality updated for MongoDB. The MongoDB database needs to be run and needs to have records imported. Run mongodb in Docker with the following code:
 
