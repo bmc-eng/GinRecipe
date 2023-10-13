@@ -111,6 +111,7 @@ func main() {
 	r.GET("/recipes/search", recipesHandler.SearchRecipeHandler)
 	// Allow the user to sign in outside requiring authentication
 	r.POST("/signin", authHandler.SignInHandler)
+	r.POST("/refresh", authHandler.RefreshHandler)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
