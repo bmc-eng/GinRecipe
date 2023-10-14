@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"gintest/handlers"
@@ -12,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -35,13 +37,18 @@ func init() {
 	// Add Auth key to the os.env
 	os.Setenv("JWT_SECRET", EnvVariable("JWT_SECRET"))
 
-	// Connect to MongoDB
+	// Initialize Database
+	//InitializeUsers()
+
+	// Connect to MongoDB for the recipes
 	ctx = context.Background()
 	client, err = mongo.Connect(ctx, options.Client().ApplyURI(EnvVariable("MONGO_URI")))
 	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
 		log.Fatal(err)
 	}
 	collection = client.Database(EnvVariable("MONGO_DATABASE")).Collection("recipes")
+	collectionUsers := client.Database(EnvVariable("MONGO_DATABASE")).Collection("users")
+
 	log.Println("Connected to MongoDB")
 
 	// Set up Redis Cache
@@ -55,7 +62,7 @@ func init() {
 
 	// Set up the recipesHandler
 	recipesHandler = handlers.NewRecipesHandler(ctx, collection, redisClient)
-	authHandler = &handlers.AuthHandler{}
+	authHandler = handlers.NewAuthHandler(ctx, collectionUsers)
 
 }
 
@@ -81,6 +88,30 @@ func InitializeDatabase() {
 		log.Fatal(err)
 	}
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
+}
+
+// This is to initially populate the users database
+func InitializeUsers() {
+	users := map[string]string{
+		"admin":   "fCRmh4Q2J7Rseqkz",
+		"bclarke": "test123",
+		"test":    "test123",
+	}
+
+	ctx := context.Background()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(EnvVariable("MONGO_URI")))
+	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		log.Fatal(err)
+	}
+	collection := client.Database(EnvVariable("MONGO_DATABASE")).Collection("users")
+	h := sha256.New()
+	for username, password := range users {
+		collection.InsertOne(ctx, bson.M{
+			"username": username,
+			"password": string(h.Sum([]byte(password))),
+		})
+	}
+	log.Println("Users inserted correctly")
 }
 
 func EnvVariable(key string) string {
@@ -111,6 +142,7 @@ func main() {
 	r.GET("/recipes/search", recipesHandler.SearchRecipeHandler)
 	// Allow the user to sign in outside requiring authentication
 	r.POST("/signin", authHandler.SignInHandler)
+	r.POST("/refresh", authHandler.RefreshHandler)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
