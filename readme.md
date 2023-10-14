@@ -13,12 +13,12 @@ The API currently has the following features:
 - Search for a recipe using GET recipes/tag
 
 ### Authorisation with JWT
-You need an authorisation token in order to post, update or delete a record. To get a token, use the POST signin functionality:
+You need an authorisation token in order to post, update or delete a record. Added functionality to connect to a MongoDB database (Users), with login information. Use the following username and password in the POST/signin 
 
 ```
 {
-    "username": "admin",
-    "password": "password"
+    "username": "test",
+    "password": "test123"
 }
 ```
 
