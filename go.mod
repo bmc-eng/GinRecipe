@@ -11,6 +11,13 @@ require (
 require github.com/dgrijalva/jwt-go v3.2.0+incompatible
 
 require (
+	github.com/gin-contrib/sessions v0.0.5 // indirect
+	github.com/gorilla/context v1.1.1 // indirect
+	github.com/gorilla/securecookie v1.1.1 // indirect
+	github.com/gorilla/sessions v1.2.1 // indirect
+)
+
+require (
 	github.com/joho/godotenv v1.5.1
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.18.1 // indirect
