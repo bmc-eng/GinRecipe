@@ -10,6 +10,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/gin-contrib/sessions"
+	redisStore "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
 	"github.com/joho/godotenv"
@@ -127,6 +129,10 @@ func EnvVariable(key string) string {
 func main() {
 	r := gin.Default()
 
+	store, _ := redisStore.NewStore(10, "tcp",
+		"localhost:6379", "", []byte("secret"))
+	r.Use(sessions.Sessions("recipes_api", store))
+
 	// Add Authentication section
 	authorized := r.Group("/")
 	authorized.Use(authHandler.AuthMiddleware())
@@ -143,6 +149,7 @@ func main() {
 	// Allow the user to sign in outside requiring authentication
 	r.POST("/signin", authHandler.SignInHandler)
 	r.POST("/refresh", authHandler.RefreshHandler)
+	r.POST("/signout", authHandler.SignOutHandler)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
