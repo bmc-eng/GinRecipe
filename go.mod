@@ -8,7 +8,19 @@ require (
 	golang.org/x/net v0.10.0
 )
 
-require github.com/dgrijalva/jwt-go v3.2.0+incompatible
+require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/gin-contrib/sessions v0.0.5
+	github.com/rs/xid v1.5.0
+)
+
+require (
+	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff // indirect
+	github.com/gomodule/redigo v2.0.0+incompatible // indirect
+	github.com/gorilla/context v1.1.1 // indirect
+	github.com/gorilla/securecookie v1.1.1 // indirect
+	github.com/gorilla/sessions v1.2.1 // indirect
+)
 
 require (
 	github.com/joho/godotenv v1.5.1
