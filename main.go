@@ -39,9 +39,6 @@ func init() {
 	// Add Auth key to the os.env
 	os.Setenv("JWT_SECRET", EnvVariable("JWT_SECRET"))
 
-	// Initialize Database
-	//InitializeUsers()
-
 	// Connect to MongoDB for the recipes
 	ctx = context.Background()
 	client, err = mongo.Connect(ctx, options.Client().ApplyURI(EnvVariable("MONGO_URI")))
@@ -52,6 +49,10 @@ func init() {
 	collectionUsers := client.Database(EnvVariable("MONGO_DATABASE")).Collection("users")
 
 	log.Println("Connected to MongoDB")
+
+	// Initialize Database - To add check to see if DB is empty
+	InitializeDatabase(collection)
+	InitializeUsers(collectionUsers)
 
 	// Set up Redis Cache
 	redisClient := redis.NewClient(&redis.Options{
@@ -74,17 +75,21 @@ func init() {
 
 // Function to initialise the database -
 // This code does not need to be run once the database is set up
-func InitializeDatabase() {
+func InitializeDatabase(collection *mongo.Collection) {
 	// Read the contents of a JSON file containing all the recipes
 	recipes := make([]models.Recipe, 0)
 	file, _ := os.ReadFile("backup/recipes.json")
-	_ = json.Unmarshal([]byte(file), &recipes)
+	err := json.Unmarshal([]byte(file), &recipes)
+	if err != nil {
+		log.Fatal("Failed to convert json file to recipes object: ", err)
+	}
 
 	var listOfRecipes []interface{}
 	for _, recipe := range recipes {
 		listOfRecipes = append(listOfRecipes, recipe)
 	}
 
+	fmt.Println(recipes)
 	insertManyResult, err := collection.InsertMany(ctx, listOfRecipes)
 	if err != nil {
 		log.Fatal(err)
@@ -93,19 +98,13 @@ func InitializeDatabase() {
 }
 
 // This is to initially populate the users database
-func InitializeUsers() {
+func InitializeUsers(collection *mongo.Collection) {
 	users := map[string]string{
 		"admin":   "fCRmh4Q2J7Rseqkz",
 		"bclarke": "test123",
 		"test":    "test123",
 	}
 
-	ctx := context.Background()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(EnvVariable("MONGO_URI")))
-	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
-		log.Fatal(err)
-	}
-	collection := client.Database(EnvVariable("MONGO_DATABASE")).Collection("users")
 	h := sha256.New()
 	for username, password := range users {
 		collection.InsertOne(ctx, bson.M{
@@ -146,6 +145,7 @@ func main() {
 	r.GET("/recipes", recipesHandler.ListRecipesHandler)
 	r.GET("/recipes/:id", recipesHandler.SingleRecipeHandler)
 	r.GET("/recipes/search", recipesHandler.SearchRecipeHandler)
+
 	// Allow the user to sign in outside requiring authentication
 	r.POST("/signin", authHandler.SignInHandler)
 	r.POST("/refresh", authHandler.RefreshHandler)
