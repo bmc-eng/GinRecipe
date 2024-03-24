@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -125,7 +126,8 @@ func (handler *RecipesHandler) NewRecipeHandler(c *gin.Context) {
 			"error": err.Error()})
 		return
 	}
-	recipe.ID = primitive.NewObjectID()
+	//recipe.ID = primitive.NewObjectID()
+	recipe.ID = uuid.NewString()
 	recipe.PublishedAt = time.Now()
 	_, err = handler.collection.InsertOne(handler.ctx, recipe)
 	if err != nil {
